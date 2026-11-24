@@ -1,0 +1,58 @@
+[build-system]
+requires = ["flit_core>=3.12,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "wim-nxc"
+version = "0.1.0"
+description = "Pure-Python read-only reader for Windows Imaging (WIM) files, maintained for NetExec"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "BSD-2-Clause"
+license-files = ["LICENSE"]
+authors = [{ name = "Pennyw0rth" }]
+keywords = ["wim", "windows imaging", "lzx", "xpress", "netexec"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+    "Topic :: System :: Archiving"
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Pennyw0rth/wim-nxc"
+Issues = "https://github.com/Pennyw0rth/wim-nxc/issues"
+
+[tool.flit.module]
+name = "wim_nxc"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+preview = true
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "D", "UP", "YTT", "ASYNC", "B", "A", "C4", "ISC", "ICN", "PIE", "PT",
+    "Q", "RSE", "RET", "SIM", "TID", "ERA", "FLY", "PERF", "LOG", "RUF", "W"
+]
+ignore = [
+    "A004", "E501", "F405", "D100", "D101", "D102", "D103", "D104", "D105", "D106",
+    "D107", "D203", "D204", "D205", "D212", "D213", "D400", "D401", "D413", "D415",
+    "D417", "D419", "FURB", "RET503", "RET505", "RET506", "RET507", "RET508",
+    "PERF203", "RUF012", "RUF052", "RUF059", "RUF201"
+]
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+multiline-quotes = "double"
