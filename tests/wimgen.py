@@ -45,11 +45,16 @@ class BitWriter:
 
 
 def code_lengths(counts, limit):
-    """Huffman code lengths for these symbol counts, all equal when the tree is deeper than limit."""
+    """
+    Huffman code lengths for these symbol counts, flattened when the tree is deeper than limit.
+
+    The code is always complete, as Windows writes it (7-Zip 26.00 rejects incomplete codes):
+    a single used symbol gets an unused partner, and only a tree without any used symbol stays empty.
+    """
     used = [symbol for symbol, count in enumerate(counts) if count]
     lengths = [0] * len(counts)
     if len(used) == 1:
-        lengths[used[0]] = 1
+        lengths[used[0]] = lengths[1 if used[0] == 0 else 0] = 1
         return lengths
     heap = [(counts[symbol], [symbol]) for symbol in used]
     heapq.heapify(heap)
@@ -59,8 +64,12 @@ def code_lengths(counts, limit):
             lengths[symbol] += 1
         heapq.heappush(heap, (first[0] + second[0], first[1] + second[1]))
     if max(lengths, default=0) > limit:
-        flat = max(1, (len(used) - 1).bit_length())
-        lengths = [flat if count else 0 for count in counts]
+        # Complete flat code: the first (2**depth - len(used)) symbols are one bit shorter
+        depth = (len(used) - 1).bit_length()
+        shorter = (1 << depth) - len(used)
+        lengths = [0] * len(counts)
+        for index, symbol in enumerate(used):
+            lengths[symbol] = depth - 1 if index < shorter else depth
     return lengths
 
 

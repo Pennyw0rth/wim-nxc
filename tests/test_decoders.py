@@ -1,10 +1,12 @@
 import io
 import struct
+from fractions import Fraction
 
 import pytest
 
 import wimgen
-from wim_nxc import WimError, WimFile
+from conftest import GENERATED
+from wim_nxc import WimError, WimFile, reader
 from wim_nxc.reader import LZX_BASE, invalid_wim, lzx_decompress, xpress_decompress
 
 BLOCK_PLANS = {
@@ -52,6 +54,37 @@ def test_xpress_long_matches(size):
     # Lengths of 18 and more use a raw byte, 273 and more a raw 16-bit value
     content = b"\x00" + b"x" * (size - 1)
     assert xpress_decompress(wimgen.xpress_compress(content, 32768), size) == content
+
+
+def kraft_sum(lengths):
+    return sum(Fraction(1, 1 << length) for length in lengths if length)
+
+
+@pytest.mark.parametrize("counts", [[0, 5, 0], [7, 0, 0, 0], [1, 1, 1], [1, 1, 1, 1, 1], [1 << index for index in range(20)]])
+def test_code_lengths_are_complete(counts):
+    lengths = wimgen.code_lengths(counts, 7)
+    assert kraft_sum(lengths) == 1
+    assert max(lengths) <= 7
+    assert all(lengths[symbol] for symbol, count in enumerate(counts) if count)
+
+
+@pytest.mark.parametrize("name", GENERATED)
+def test_generated_huffman_trees_are_complete(name, monkeypatch):
+    """7-Zip 26.00 rejected generated WIMs with incomplete Huffman codes; Windows only leaves an unused LZX length tree empty."""
+    trees = []
+    build_table = reader.huffman_table
+
+    def record(lengths):
+        trees.append(list(lengths))
+        return build_table(lengths)
+
+    monkeypatch.setattr(reader, "huffman_table", record)
+    images, options = GENERATED[name]
+    with WimFile(io.BytesIO(wimgen.build_wim(images, **options))) as wim:
+        for _, _, digest in wim.files():
+            wim.read(digest)
+    assert trees or not options["compression"]
+    assert [kraft_sum(lengths) for lengths in trees if kraft_sum(lengths) not in (0, 1)] == []
 
 
 def uncompressed_chunk(payload):
